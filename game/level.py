@@ -33,7 +33,7 @@ class Level:
 
 
 LEVEL_1_LAYOUT = [
-    "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "X                                              ",
     "X                                              ",
     "X                                              ",
     "X                                              ",
