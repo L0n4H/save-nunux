@@ -3,7 +3,7 @@ import pygame
 import os
 from pathlib import Path  # Utilisation de pathlib pour la portabilité des chemins
 from settings import *
-from level import Level, LEVEL_1_LAYOUT
+from level import Level, LEVEL_1_LAYOUT, LEVEL_2_LAYOUT
 from player import Player
 from ennemy import Ennemy
 class Game:
@@ -48,6 +48,8 @@ class Game:
     def update(self, dt):
         self.player.update(dt, self.solid_tiles)
         self.enemies.update(dt, self.solid_tiles)
+        if self.player.x > 150:
+            self.level = Level(LEVEL_2_LAYOUT)
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
