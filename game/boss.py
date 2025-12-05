@@ -1,6 +1,7 @@
 # boss.py
 
 import pygame
+
 from settings import *          # TILE_SIZE, ENEMY_SPEED, ENEMY_GRAVITY
 from ennemy import Ennemy       # collisions / gravité déjà faites
 
@@ -18,8 +19,39 @@ class Boss(Ennemy):
         # Même logique de position que Ennemy -> topleft
         self.rect = self.image.get_rect(topleft=(x, y))
 
-        # Un peu plus lent/rapide si tu veux, sinon garde ENEMY_SPEED
+        # Vitesse identique à un ennemi classique
         self.speed = ENEMY_SPEED
+
+        # Paramètres de saut (à ajuster si besoin)
+        self.jump_force = -450      # vers le haut
+        self.can_jump = True        # évite le spam
+
+    def _should_jump(self, solid_tiles):
+        """Retourne True si un obstacle est juste devant le boss."""
+        # Il doit être au sol et se déplacer
+        if not self.on_ground or self.direction.x == 0:
+            return False
+
+        # Zone de détection devant, à hauteur des jambes
+        offset_x = 8 if self.direction.x > 0 else -8
+
+        # Petit rectangle devant, sur le tiers inférieur du boss
+        check_height = self.rect.height // 2
+        check_y = self.rect.bottom - check_height
+        check_rect = pygame.Rect(
+            self.rect.x + offset_x,
+            check_y,
+            self.rect.width,
+            check_height
+        )
+
+        for tile in solid_tiles:
+            if tile.rect.colliderect(check_rect):
+                # On ignore les tiles complètement sous les pieds
+                if tile.rect.top < self.rect.bottom - 2:
+                    return True
+
+        return False
 
     def update(self, dt, solid_tiles, player):
         if not self.alive:
@@ -33,8 +65,18 @@ class Boss(Ennemy):
         else:
             self.direction.x = 0
 
+        # Si obstacle juste devant et qu'on peut sauter -> impulsion vers le haut
+        if self._should_jump(solid_tiles) and self.can_jump:
+            self.direction.y = self.jump_force
+            self.on_ground = False
+            self.can_jump = False
+
         # Utiliser EXACTEMENT la même physique que Ennemy
         super().update(dt, solid_tiles)
+
+        # Quand il retouche le sol, on réautorise un saut
+        if self.on_ground:
+            self.can_jump = True
 
     def draw_health_bar(self, surface):
         bar_width = self.rect.width
