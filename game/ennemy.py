@@ -4,7 +4,6 @@ from settings import * # Nécessite TILE_SIZE, ENEMY_SPEED, ENEMY_GRAVITY
 class Ennemy(pygame.sprite.Sprite):
     def __init__(self, x, y, health):
         super().__init__()
-        
 
         # 1. Image et Rectangle de Collision
         self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))

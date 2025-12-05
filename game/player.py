@@ -62,7 +62,7 @@ class Player(pygame.sprite.Sprite):
         self.gravity = 0.8
         self.on_ground = False
         self.max_health = 100
-        self.health = self.max_health
+        self.health = 100
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
