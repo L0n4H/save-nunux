@@ -2,7 +2,7 @@
 
 import pygame
 import os
-
+from pathlib import Path
 from settings import *
 
 
@@ -14,8 +14,9 @@ class Player(pygame.sprite.Sprite):
         self.SCALE_FACTOR = 1.5  # essaie 1.5, 2, 3...
 
         # --- chargement du spritesheet ---
-        sheet_path = os.path.join("assets", "player", "player.png")
-        self.spritesheet = pygame.image.load(sheet_path).convert_alpha()
+        BASE_DIR = Path(__file__).parent 
+        sheet_path = BASE_DIR / 'assets' / 'player'/'player.png' 
+        self.spritesheet = pygame.image.load(str(sheet_path)).convert()
 
         # paramètres du sheet
         self.rows = 4          # 4 lignes
@@ -60,7 +61,8 @@ class Player(pygame.sprite.Sprite):
         self.jump_force = -15
         self.gravity = 0.8
         self.on_ground = False
-        self.healt = 100
+        self.max_health = 100
+        self.health = self.max_health
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
