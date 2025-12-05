@@ -36,11 +36,30 @@ class Game:
 
 
 
+    def draw_health_bar(self):
+
+        bar_x = 20
+        bar_y = 20
+        bar_width = 200
+        bar_height = 20
+
+
+        ratio = self.player.health / self.player.max_health
+        current_width = int(bar_width * ratio)
+
+        # fond (barre vide)
+        pygame.draw.rect(self.screen, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height))
+
+        pygame.draw.rect(self.screen, (200, 50, 50), (bar_x, bar_y, current_width, bar_height))
+        # contour
+        pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+
     def draw(self):
-        # dessiner le fond
+
         self.screen.blit(self.background, (0, 0))
         self.level.draw(self.screen)
         self.screen.blit(self.player.image, self.player.rect)
+        self.draw_health_bar()
 
 
     def run(self):
