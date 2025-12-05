@@ -6,6 +6,8 @@ from settings import *
 from level import Level, LEVEL_1_LAYOUT
 from player import Player
 from ennemy import Ennemy
+from boss import Boss
+
 class Game:
     def __init__(self, screen):
         self.screen = screen
@@ -35,6 +37,9 @@ class Game:
         # Exemple d'ajout d'un ennemi à la position (500, 100) avec 100 points de vie
         enemy_1 = Ennemy(500, 100, 100)
         self.enemies.add(enemy_1)
+        # --- Boss ---
+        # x=900, y=100 : à adapter selon ton niveau
+        self.boss = Boss(900, 100, 300)   # 300 PV par exemple
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -48,6 +53,8 @@ class Game:
     def update(self, dt):
         self.player.update(dt, self.solid_tiles)
         self.enemies.update(dt, self.solid_tiles)
+        self.boss.update(dt, self.solid_tiles, self.player)
+
 
     def draw_health_bar(self):
 
@@ -68,12 +75,15 @@ class Game:
         pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
 
     def draw(self):
-        # dessiner le fond
         self.screen.blit(self.background, (0, 0))
         self.level.draw(self.screen)
         self.screen.blit(self.player.image, self.player.rect)
         self.draw_health_bar()
         self.enemies.draw(self.screen)
+
+        # Dessin du boss + sa barre de vie
+        self.boss.draw(self.screen)
+
 
     def run(self):
         while self.running:
