@@ -1,34 +1,47 @@
 # player.py
+
 import pygame
 import os
+
 from settings import *
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
+
+        # facteur de zoom du perso
+        self.SCALE_FACTOR = 1.5  # essaie 1.5, 2, 3...
 
         # --- chargement du spritesheet ---
         sheet_path = os.path.join("assets", "player", "player.png")
         self.spritesheet = pygame.image.load(sheet_path).convert_alpha()
 
         # paramètres du sheet
-        self.rows = 4           # 4 lignes
-        self.cols = 8           # <-- à ajuster selon ton image
+        self.rows = 4          # 4 lignes
+        self.cols = 8          # à ajuster si besoin
+
         sheet_w, sheet_h = self.spritesheet.get_size()
         frame_w = sheet_w // self.cols
         frame_h = sheet_h // self.rows
 
+        # largeur/hauteur après zoom
+        scale_w = int(TILE_SIZE * self.SCALE_FACTOR)
+        scale_h = int(scale_w * (frame_h / frame_w))
+
+        # --- frame d'idle : 1ère ligne, 1ère colonne ---
+        idle_rect = pygame.Rect(0, 0, frame_w, frame_h)
+        idle = self.spritesheet.subsurface(idle_rect)
+        self.idle_frame = pygame.transform.scale(idle, (scale_w, scale_h))
+
         # --- récupération des frames de course (dernière ligne) ---
-        run_row = self.rows - 1   # 0,1,2,3 -> 3 = 4e ligne
+        run_row = self.rows - 1  # 0,1,2,3 -> 3 = 4e ligne
         self.run_frames = []
+
         for c in range(self.cols):
             rect = pygame.Rect(c * frame_w, run_row * frame_h, frame_w, frame_h)
             frame = self.spritesheet.subsurface(rect)
-
-            # optionnel : redimensionner à ta grille
-            scale_h = int(TILE_SIZE * (frame_h / frame_w))
-            frame = pygame.transform.scale(frame, (TILE_SIZE, scale_h))
-
+            frame = pygame.transform.scale(frame, (scale_w, scale_h))
             self.run_frames.append(frame)
 
         # état initial
@@ -37,7 +50,8 @@ class Player(pygame.sprite.Sprite):
         self.anim_timer = 0
         self.facing_right = True
 
-        self.image = self.run_frames[self.frame_index]
+        # image et rect de départ = idle
+        self.image = self.idle_frame
         self.rect = self.image.get_rect(topleft=(x, y))
 
         # physique
@@ -47,10 +61,10 @@ class Player(pygame.sprite.Sprite):
         self.gravity = 0.8
         self.on_ground = False
 
-
     def handle_input(self):
         keys = pygame.key.get_pressed()
         self.vel.x = 0
+
         if keys[pygame.K_q]:
             self.vel.x = -self.speed
         if keys[pygame.K_d]:
@@ -66,15 +80,14 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = self.jump_force
             self.on_ground = False
 
-
     def move_and_collide(self, tiles):
         # déplacement horizontal
         self.rect.x += self.vel.x
         for tile in tiles:
             if self.rect.colliderect(tile.rect):
-                if self.vel.x > 0:   # va à droite
+                if self.vel.x > 0:      # va à droite
                     self.rect.right = tile.rect.left
-                elif self.vel.x < 0: # va à gauche
+                elif self.vel.x < 0:    # va à gauche
                     self.rect.left = tile.rect.right
 
         # déplacement vertical
@@ -82,11 +95,11 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         for tile in tiles:
             if self.rect.colliderect(tile.rect):
-                if self.vel.y > 0:   # tombe
+                if self.vel.y > 0:      # tombe
                     self.rect.bottom = tile.rect.top
                     self.vel.y = 0
                     self.on_ground = True
-                elif self.vel.y < 0: # monte
+                elif self.vel.y < 0:    # monte
                     self.rect.top = tile.rect.bottom
                     self.vel.y = 0
 
@@ -108,13 +121,17 @@ class Player(pygame.sprite.Sprite):
                 self.facing_right = True
 
             self.image = img
+
         else:
-            # idle = première frame, orientée dans la dernière direction
-            base = self.run_frames[0]
-            if self.facing_right:
-                self.image = base
-            else:
-                self.image = pygame.transform.flip(base, True, False)
+            # idle = frame (1,1), orientée dans la dernière direction
+            img = self.idle_frame
+            if not self.facing_right:
+                img = pygame.transform.flip(img, True, False)
+
+            self.image = img
+            # on reset l'anim de course
+            self.frame_index = 0
+            self.anim_timer = 0
 
     def update(self, dt, tiles):
         self.handle_input()
