@@ -40,10 +40,12 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.player.jump()
+                if event.key == pygame.K_LSHIFT:
+                        self.player.dash()
+            self.player.handle_input()
 
     def update(self, dt):
         self.player.update(dt, self.solid_tiles)

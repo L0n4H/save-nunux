@@ -60,49 +60,118 @@ class Player(pygame.sprite.Sprite):
         self.jump_force = -15
         self.gravity = 0.8
         self.on_ground = False
+        # dash mecha
+        self.is_dashing = False
+        self.dash_speed = 10
+        self.dash_duration = 0.10 # Durée du dash en secondes
+        self.dash_timer = 0
+
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
+        
+        # Si le dash est en cours, l'entrée du joueur est ignorée pour le mouvement
+        if self.is_dashing:
+            return 
+        
+        self.dash_input_x = 0
+        self.dash_input_y = 0
+        
         self.vel.x = 0
 
         if keys[pygame.K_q]:
             self.vel.x = -self.speed
+            self.dash_input_x = -1
         if keys[pygame.K_d]:
             self.vel.x = self.speed
+            self.dash_input_x = 1
+            
+        if keys[pygame.K_z]: # Exemple : touche Z pour monter
+             self.dash_input_y = -1
+        if keys[pygame.K_s]: # Exemple : touche S pour descendre
+             self.dash_input_y = 1
 
     def apply_gravity(self):
+        # La gravité est appliquée uniquement si le joueur n'est PAS en train de dasher
+        if self.is_dashing:
+            self.vel.y = 0 # Annuler l'effet de la gravité pendant le dash
+            return
         self.vel.y += self.gravity
         if self.vel.y > 20:
             self.vel.y = 20
 
     def jump(self):
-        if self.on_ground:
+        if self.on_ground and self.can_dash:
             self.vel.y = self.jump_force
             self.on_ground = False
 
-    def move_and_collide(self, tiles):
-        # déplacement horizontal
-        self.rect.x += self.vel.x
-        for tile in tiles:
-            if self.rect.colliderect(tile.rect):
-                if self.vel.x > 0:      # va à droite
-                    self.rect.right = tile.rect.left
-                elif self.vel.x < 0:    # va à gauche
-                    self.rect.left = tile.rect.right
+    def dash(self):
+        if self.can_dash: 
+            # 1. Crée un vecteur direction basé sur les entrées enregistrées
+            dash_vector = pygame.math.Vector2(self.dash_input_x, self.dash_input_y)
+            
+            # 2. Si aucune direction n'est spécifiée, le dash se fait dans la direction où le joueur fait face
+            if dash_vector.length_squared() == 0:
+                dash_vector.x = 1 if self.facing_right else -1
+            
+            # 3. Normalise le vecteur pour que la vitesse soit constante, même en diagonale
+            # La division par zéro est gérée par la condition précédente.
+            dash_vector = dash_vector.normalize()
+            
+            # 4. Applique la vélocité et met à jour l'état
+            self.is_dashing = True
+            self.can_dash = False 
+            self.dash_timer = self.dash_duration
+            
+            self.vel.x = dash_vector.x * self.dash_speed
+            self.vel.y = dash_vector.y * self.dash_speed
+                
 
-        # déplacement vertical
-        self.rect.y += self.vel.y
-        self.on_ground = False
+    def move_and_collide(self, tiles):
+        
+        # Déplacement horizontal
+        self.rect.x += int(self.vel.x)
+        
         for tile in tiles:
             if self.rect.colliderect(tile.rect):
-                if self.vel.y > 0:      # tombe
+                if self.vel.x > 0:       # Va à droite
+                    self.rect.right = tile.rect.left
+                    if self.is_dashing:
+                        self.is_dashing = False
+                        self.vel.x = 0
+                        self.vel.y = 0  # ⬅️ NOUVEAU : Arrêt total du mouvement X/Y
+                elif self.vel.x < 0:     # Va à gauche
+                    self.rect.left = tile.rect.right
+                    if self.is_dashing:
+                        self.is_dashing = False
+                        self.vel.x = 0
+                        self.vel.y = 0  # ⬅️ NOUVEAU : Arrêt total du mouvement X/Y
+
+        # Déplacement vertical
+        self.rect.y += int(self.vel.y)
+        self.on_ground = False
+        
+        for tile in tiles:
+            if self.rect.colliderect(tile.rect):
+                if self.vel.y > 0:       # Tombe
                     self.rect.bottom = tile.rect.top
                     self.vel.y = 0
                     self.on_ground = True
-                elif self.vel.y < 0:    # monte
+                    self.can_dash = True 
+                    
+                    if self.is_dashing:  # Arrêt du dash si collision verticale (vers le bas)
+                        self.is_dashing = False
+                        self.vel.x = 0  # ⬅️ NOUVEAU : Arrêt total du mouvement X/Y
+                        self.vel.y = 0
+                        
+                elif self.vel.y < 0:     # Monte (Plafond)
                     self.rect.top = tile.rect.bottom
                     self.vel.y = 0
-
+                    
+                    if self.is_dashing:  # Arrêt du dash si collision verticale (vers le haut)
+                        self.is_dashing = False
+                        self.vel.x = 0  # ⬅️ NOUVEAU : Arrêt total du mouvement X/Y
+                        self.vel.y = 0
     def animate(self, dt):
         # si on bouge horizontalement -> animer la course
         if self.vel.x != 0:
